@@ -26,13 +26,17 @@ export interface AnalyzeParagraphMessage {
 }
 
 // Response from background → content script
-export interface AnalyzeParagraphResponse {
+interface AnalyzeParagraphSuccessResponse {
   success: true;
   result: DetectionResult;
-} | {
+}
+
+// Response from background → content script
+interface AnalyzeParagraphErrorResponse{
   success: false;
   error: string;
 }
 
+export type AnalyzeParagraphResponse = AnalyzeParagraphSuccessResponse | AnalyzeParagraphErrorResponse;
 export type PopupToContentMessage = ActivateDetectionMessage | DeactivateDetectionMessage;
 export type ContentToBackgroundMessage = AnalyzeParagraphMessage;
