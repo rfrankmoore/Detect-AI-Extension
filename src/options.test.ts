@@ -1,14 +1,12 @@
-const mockGet = jest.fn();
-const mockSet = jest.fn();
+import storage from "./storage";
 
-(global as any).chrome = {
-    storage: {
-        local: {
-            get: mockGet,
-            set: mockSet,
-        },
+jest.mock("./storage", () => ({
+    __esModule: true,
+    default: {
+        getSettings: jest.fn(),
+        storeSettings: jest.fn(),
     },
-};
+}));
 
 const flushPromises = () => new Promise<void>(resolve => setTimeout(resolve, 0));
 
@@ -24,9 +22,7 @@ describe("options page", () => {
       <span id="status"></span>
     `;
 
-        mockGet.mockResolvedValue({
-            "detectAiSettings": {claudeApiKey: "existing-key"},
-        });
+        (storage.getSettings as jest.Mock).mockResolvedValue({claudeApiKey: "existing-key"});
 
         await import("./options.js");
         document.dispatchEvent(new Event("DOMContentLoaded"));
@@ -38,8 +34,8 @@ describe("options page", () => {
     });
 
     beforeEach(() => {
-        mockSet.mockReset();
-        mockSet.mockResolvedValue(undefined);
+        (storage.storeSettings as jest.Mock).mockReset();
+        (storage.storeSettings as jest.Mock).mockResolvedValue(undefined);
         statusEl.textContent = "";
     });
 
@@ -56,24 +52,22 @@ describe("options page", () => {
         expect(statusEl.textContent).toBe("Please enter a valid API key.");
     });
 
-    it("does not save to storage when the API key is empty", async () => {
+    it("does not call storage when the API key is empty", async () => {
         apiKeyInput.value = "";
 
         saveBtn.click();
         await flushPromises();
 
-        expect(mockSet).not.toHaveBeenCalled();
+        expect(storage.storeSettings).not.toHaveBeenCalled();
     });
 
-    it("saves settings to chrome.storage.local when a valid API key is provided", async () => {
+    it("saves settings via storage when a valid API key is provided", async () => {
         apiKeyInput.value = "new-key";
 
         saveBtn.click();
         await flushPromises();
 
-        expect(mockSet).toHaveBeenCalledWith({
-            "detectAiSettings": {claudeApiKey: "new-key"},
-        });
+        expect(storage.storeSettings).toHaveBeenCalledWith({claudeApiKey: "new-key"});
     });
 
     it("shows a success message after saving", async () => {
@@ -90,9 +84,7 @@ describe("options page", () => {
 
         saveBtn.click();
         await flushPromises();
-        
-        expect(mockSet).toHaveBeenCalledWith({
-            "detectAiSettings": {claudeApiKey: "padded-key"},
-        });
+
+        expect(storage.storeSettings).toHaveBeenCalledWith({claudeApiKey: "padded-key"});
     });
 });
